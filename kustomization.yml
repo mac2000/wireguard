@@ -1,0 +1,22 @@
+---
+namespace: vpn
+resources:
+  - namespace.yml
+  - deployment.yml
+  - service.yml
+  - cronjob.yml
+configMapGenerator:
+  - name: vpn
+    files:
+    - entrypoint.sh
+    - default.conf
+    - index.sh
+    - add.sh
+    - remove.sh
+    - check.sh
+    - cleanup.sh
+    - metrics.sh
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    app: vpn

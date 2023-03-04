@@ -1,0 +1,19 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vpn
+  namespace: vpn
+  labels:
+    app: vpn
+spec:
+  type: LoadBalancer
+  selector:
+    app: vpn
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+    - name: wireguard
+      port: 51820
+      protocol: UDP

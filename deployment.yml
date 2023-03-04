@@ -1,0 +1,76 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vpn
+  namespace: vpn
+  labels:
+    app: vpn
+spec:
+  selector:
+    matchLabels:
+      app: vpn
+  template:
+    metadata:
+      labels:
+        app: vpn
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      containers:
+      - name: vpn
+        image: nginx:alpine
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: CIDR
+            value: 10.14.14.0/24
+          - name: ALLOWED_AD_GROUP_NAME
+            value: Product Department
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        - name: wireguard
+          containerPort: 51820
+          protocol: UDP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1024Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+        volumeMounts:
+          - name: vpn
+            mountPath: /docker-entrypoint.d/00-init.sh
+            subPath: entrypoint.sh
+          - name: vpn
+            mountPath: /etc/nginx/conf.d/default.conf
+            subPath: default.conf
+          - name: vpn
+            mountPath: /usr/share/nginx/html/index.sh
+            subPath: index.sh
+          - name: vpn
+            mountPath: /usr/share/nginx/html/add.sh
+            subPath: add.sh
+          - name: vpn
+            mountPath: /usr/share/nginx/html/remove.sh
+            subPath: remove.sh
+          - name: vpn
+            mountPath: /usr/share/nginx/html/check.sh
+            subPath: check.sh
+          - name: vpn
+            mountPath: /usr/share/nginx/html/cleanup.sh
+            subPath: cleanup.sh
+          - name: vpn
+            mountPath: /usr/share/nginx/html/metrics.sh
+            subPath: metrics.sh
+      volumes:
+        - name: vpn
+          configMap:
+            name: vpn
+            defaultMode: 0777

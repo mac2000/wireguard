@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vpn
+  namespace: vpn
+  labels:
+    app: vpn
+spec:
+  schedule: "0 * * * *"
+  successfulJobsHistoryLimit: 0
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    metadata:
+      labels:
+        app: vpn
+    spec:
+      template:
+        metadata:
+          labels:
+            app: vpn
+        spec:
+          nodeSelector:
+            kubernetes.io/os: linux
+          containers:
+          - name: cleanup
+            image: curlimages/curl
+            imagePullPolicy: IfNotPresent
+            command:
+            - curl
+            - -s
+            - http://vpn/cleanup
+          restartPolicy: OnFailure
+
+# kubectl create job --from=cronjob/vpn vpn-manual-001
+# kubectl get po -l job-name=vpn-manual-001
+# kubectl logs -l job-name=vpn-manual-001
+# kubectl delete job vpn-manual-001
