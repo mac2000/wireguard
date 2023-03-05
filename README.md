@@ -2,6 +2,8 @@
 
 Goal: passwordless WireGuard VPN running inside Azure AKS Kubernetes cluster with ephemeral secrets and clients connecting via Azure Active Directory
 
+![screenshot](screenshot.png)
+
 <details>
 <summary>How does WireGuard works?</summary>
 
@@ -280,6 +282,8 @@ And suddenly we are inside the cluster, which means not only I can open [http://
 - in case of kubernetes is not accessible or we do not want kubectl as dependency our api may return all that dns and search names
 - if we do not want az cli as dependency we may register an application in azure and do device registration flow instead
 - if you have multiple kubernetes clusters with different pod cidrs you may want to reconfigure everything in a such a way so you may have multiple connection at once
+- you may want to split web and wg into different services and cover web with ingress, i did not do it in this demo just to keep everything simple
+- in case of need, you may want to create an role with view privileges, so api and discover its endpoint or better just put it behind dns
 
 <details>
 <summary>How to get rid of az cli</summary>
