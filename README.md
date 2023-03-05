@@ -4,6 +4,14 @@ Goal: passwordless WireGuard VPN running inside Azure AKS Kubernetes cluster wit
 
 ![screenshot](screenshot.png)
 
+Things to watch out:
+
+- no secrets passed, shared, stored, transferred - so nothing to hide and nothing to rotate
+- everything is ephemeral which means even if something will be exposed it will become dead sooner that will be discovered
+- thanks to azure private networks we are not only inside the Kubernetes and can talk to services running inside but as well to other servers in same network
+- because of coredns we may configure everything in a such a way that we will be talking to ingress internal address while connected
+
+
 <details>
 <summary>How does WireGuard works?</summary>
 
@@ -193,6 +201,8 @@ It will spin up:
 
 ## The client guide
 
+> Prerequisites for MacOS `brew install azure-cli kubectl wireguard-tools`, for Windows `choco install azure-cli kubernetes-cli wireguard`
+
 Just downlad the client script and put it somewhere accessible in path, e.g.:
 
 ```bash
@@ -334,5 +344,40 @@ echo "Hello $username"
 ```
 
 With that in place you do not need az cli anymore
+
+</details>
+
+
+<details>
+<summary>The CoreDNS trick</summary>
+
+In AKS we have this CoreDNS out of the box. It has dedicated `coredns-custom` config map where we may tune the settings.
+
+Here is the trick, we have ingress up and running, all services are register themselves to it by providing an dns name, and this ingress has public and private ips, and both of them are serving this requests, which means in our CoreDNS config map we may do somthing like:
+
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+data:
+  hosts.override: |-
+    hosts {
+      10.0.125.37 my-awesome-service-1.mac-blog.org.ua
+      10.0.125.37 my-awesome-service-2.mac-blog.org.ua
+      ...
+      fallthrough
+    }
+```
+
+Here the `10.0.125.37` is an cluster(private) ip address of ingress controller
+
+Having this in place, suddenly all requests inside the cluster are not leaving the local network
+
+And because in our WireGuard config we pass DNS requests from our local machine will go to cluster ip as well
+
+That allows us to do the tricks like hiding some endpoints if requests are not "local"
 
 </details>
