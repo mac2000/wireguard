@@ -11,6 +11,7 @@ Things to watch out:
 - thanks to azure private networks we are not only inside the Kubernetes and can talk to services running inside but as well to other servers in same network
 - because of coredns we may configure everything in a such a way that we will be talking to ingress internal address while connected
 
+[How does AAD approach works?](https://www.reddit.com/r/selfhosted/comments/11iuxf3/comment/jb0kzoj/?utm_source=reddit&utm_medium=web2x&context=3)
 
 <details>
 <summary>How does WireGuard works?</summary>
