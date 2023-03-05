@@ -177,6 +177,8 @@ The setup of server itself is as simple as:
 kubectl apply -k .
 ```
 
+You may want to check and/or modify deployment environment variables `CIDR`, `ALLOWED_AD_GROUP_NAME`
+
 It will spin up:
 
 - vpn namespace
@@ -246,6 +248,7 @@ peer: jvUrYmfK8PhfksMfHKe76WVzRbtOeQtT4ZPUgU4eqDc=
   latest handshake: 2 minutes, 6 seconds ago
   transfer: 18.81 KiB received, 8.71 KiB sent
   persistent keepalive: every 25 seconds
+
 retrieving client public key: ok
 retrieving access token: ok
 retrieving server public ip: ok
@@ -262,11 +265,70 @@ Whenever you connected following this should technically work:
 # check if we can talk to kubernetes dns
 nc -vz 10.0.0.10 53
 
-# check if we can resolve
+# check if we can resolve dns names
 nslookup prometheus 10.0.0.10
 
-# check if we can connect
+# check if we can talk to resourses running in cluster
 curl -s -i http://prometheus/metrics | head -n 1
 ```
 
 And suddenly we are inside the cluster, which means not only I can open [http://prometheus/](http://prometheus/) in my browser but as well the service I'm building can talk to its dependencies as if it was running inside the cluster.
+
+# Other ideas that may be done:
+
+- we may switch our local kubectl to internal ip address
+- in case of kubernetes is not accessible or we do not want kubectl as dependency our api may return all that dns and search names
+- if we do not want az cli as dependency we may register an application in azure and do device registration flow instead
+- if you have multiple kubernetes clusters with different pod cidrs you may want to reconfigure everything in a such a way so you may have multiple connection at once
+
+<details>
+<summary>How to get rid of az cli</summary>
+
+We gonna need an app registration:
+
+```bash
+az ad app create --display-name mactemp --is-fallback-public-client
+
+az ad sp create --id $(az ad app list --display-name mactemp --query "[].{appId:appId}" -o tsv)
+
+client_id=$(az ad app list --display-name mactemp --query "[].{appId:appId}" -o tsv)
+tenant_id=$(az account show --query tenantId -o tsv)
+
+echo "client_id: $client_id"
+echo "tenant_id: $tenant_id"
+```
+
+Note: none of ids we are printing are not secrets so may be safely send to clients
+
+And from client side we may start our device flow like this (following docs)[https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code]:
+
+```bash
+response=$(curl -s -X POST "https://login.microsoftonline.com/$tenant_id/oauth2/v2.0/devicecode" -H "Content-Type: application/x-www-form-urlencoded" -d "client_id=$client_id&scope=user.read%20openid%20profile")
+
+user_code=$(echo $response | jq -r ".user_code")
+device_code=$(echo $response | jq -r ".device_code")
+
+echo "user_code: $user_code"
+open "https://microsoft.com/devicelogin"
+
+for i in {1..5}
+do
+  sleep 5
+  access_token=$(curl -s -X POST "https://login.microsoftonline.com/$tenant_id/oauth2/v2.0/token" -H "Content-Type: application/x-www-form-urlencoded" -d "grant_type=urn:ietf:params:oauth:grant-type:device_code&client_id=$client_id&device_code=$device_code" | jq -r ".access_token")
+  if [ "$access_token" == "null" ]
+  then
+    echo "attempt $i of 5, did not received token yet"
+  else
+    echo "access token received"
+    break
+  fi
+done
+
+# echo "access_token: $access_token"
+username=$(curl -s -H "Authorization: Bearer $access_token" "https://graph.microsoft.com/oidc/userinfo" | jq -r ".name")
+echo "Hello $username"
+```
+
+With that in place you do not need az cli anymore
+
+</details>
