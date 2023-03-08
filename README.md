@@ -382,3 +382,27 @@ And because in our WireGuard config we pass DNS requests from our local machine 
 That allows us to do the tricks like hiding some endpoints if requests are not "local"
 
 </details>
+
+## Troubleshooting
+
+WireGuard works in a such a way that it is not requiring always open connection and safely survives network changes. But the downside of this - it might think that it is connected (configured may be the right word here) but in reality opossite side may be not, so nothing wont work
+
+You always may run:
+
+```bash
+wg-quick down ~/.config/vpn.conf
+```
+
+But in case if you just removed an interface - dns still will be there
+
+To deal with this you may want to run commands like:
+
+```bash
+networksetup -getdnsservers Wi-Fi
+networksetup -getsearchdomains Wi-Fi
+
+networksetup -setdnsservers Wi-Fi "Empty"
+networksetup -setsearchdomains Wi-Fi "Empty"
+```
+
+Technically `wg-quick` is an helper script that does configure interface and call such commands to configure dns, you may see it in client connect logs
